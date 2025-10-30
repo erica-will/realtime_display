@@ -15,11 +15,52 @@ export default function DisplayClient({
   const [content, setContent] = useState<DisplayContent>(
     initial ?? DEFAULT_CONTENT
   );
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'polling'>('connecting');
+  const [isPolling, setIsPolling] = useState(false);
 
   useEffect(() => {
     let es: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout | null = null;
+    let pollTimer: NodeJS.Timeout | null = null;
+
+    // 輪詢函數
+    const startPolling = () => {
+      console.log('開始輪詢模式');
+      setConnectionStatus('polling');
+      setIsPolling(true);
+      
+      const poll = async () => {
+        try {
+          const response = await fetch(`/api/poll?lastVersion=${encodeURIComponent(content.version)}`);
+          const data = await response.json();
+          
+          if (data.hasUpdate && data.content) {
+            console.log('輪詢獲得新內容:', data.content);
+            setContent(data.content);
+          }
+        } catch (error) {
+          console.error('輪詢錯誤:', error);
+        }
+        
+        // 每 3 秒輪詢一次
+        pollTimer = setTimeout(poll, 3000);
+      };
+      
+      poll();
+    };
+
+    // 在生產環境或 Vercel 上優先使用輪詢
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isVercel = globalThis.location?.hostname.includes('vercel.app') || false;
+    const forcePolling = isProduction || isVercel;
+
+    if (forcePolling) {
+      console.log('檢測到生產環境或 Vercel，使用輪詢模式');
+      startPolling();
+      return () => {
+        if (pollTimer) clearTimeout(pollTimer);
+      };
+    }
 
     const connect = () => {
       setConnectionStatus('connecting');
@@ -28,6 +69,12 @@ export default function DisplayClient({
       es.onopen = () => {
         console.log('SSE 連線已建立');
         setConnectionStatus('connected');
+        setIsPolling(false);
+        // 停止輪詢
+        if (pollTimer) {
+          clearTimeout(pollTimer);
+          pollTimer = null;
+        }
       };
       
       es.onmessage = (e) => {
@@ -64,10 +111,30 @@ export default function DisplayClient({
         setConnectionStatus('disconnected');
         es?.close();
         
-        // 5 秒後重連
+        // 5 秒後嘗試重連，如果失敗則切換到輪詢
         reconnectTimer = setTimeout(() => {
           console.log('嘗試重新連線...');
-          connect();
+          setConnectionStatus('connecting');
+          
+          // 嘗試一次重連，如果失敗就切換到輪詢
+          const testEs = new EventSource("/api/stream");
+          const timeout = setTimeout(() => {
+            console.log('SSE 重連失敗，切換到輪詢模式');
+            testEs.close();
+            startPolling();
+          }, 5000);
+          
+          testEs.onopen = () => {
+            clearTimeout(timeout);
+            testEs.close();
+            connect(); // 重新開始正常連線
+          };
+          
+          testEs.onerror = () => {
+            clearTimeout(timeout);
+            testEs.close();
+            startPolling();
+          };
         }, 5000);
       };
     };
@@ -76,9 +143,10 @@ export default function DisplayClient({
 
     return () => {
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (pollTimer) clearTimeout(pollTimer);
       es?.close();
     };
-  }, []);
+  }, [content.version]);
 
   const variants = useMemo(() => toVariants(content.effect), [content.effect]);
 
@@ -88,6 +156,8 @@ export default function DisplayClient({
         return 'bg-green-100 text-green-800';
       case 'connecting':
         return 'bg-yellow-100 text-yellow-800';
+      case 'polling':
+        return 'bg-blue-100 text-blue-800';
       case 'disconnected':
         return 'bg-red-100 text-red-800';
       default:
@@ -98,9 +168,11 @@ export default function DisplayClient({
   const getConnectionStatusText = () => {
     switch (connectionStatus) {
       case 'connected':
-        return '● 已連線';
+        return '● 即時連線';
       case 'connecting':
         return '○ 連線中';
+      case 'polling':
+        return '◐ 輪詢模式';
       case 'disconnected':
         return '● 已斷線';
       default:

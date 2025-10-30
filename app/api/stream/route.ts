@@ -1,4 +1,6 @@
-export const runtime = 'edge';
+// 使用 Node.js runtime 以支援長時間連線
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const url = process.env.UPSTASH_REDIS_REST_URL!;
