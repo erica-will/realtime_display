@@ -3,11 +3,33 @@ import { z } from 'zod';
 import { redis, CURRENT_KEY, CHANNEL } from '@/lib/kv';
 import type { DisplayContent } from '@/types/content';
 
+const effectSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('fade'),
+    duration: z.number(),
+  }),
+  z.object({
+    type: z.literal('slide'),
+    direction: z.enum(['left', 'right', 'up', 'down']),
+    duration: z.number(),
+  }),
+  z.object({
+    type: z.literal('scale'),
+    duration: z.number(),
+  }),
+  z.object({
+    type: z.literal('custom'),
+    name: z.string(),
+    duration: z.number(),
+    params: z.record(z.string(), z.unknown()).optional(),
+  }),
+]);
+
 const schema = z.object({
   title: z.string(),
   body: z.string(),
   imageUrl: z.string().url(),
-  effect: z.object({ type: z.enum(['fade','slide','scale','custom']) }).passthrough(),
+  effect: effectSchema,
   version: z.string().optional(),
 });
 

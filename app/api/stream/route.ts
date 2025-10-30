@@ -22,7 +22,7 @@ export async function GET() {
   const stream = new ReadableStream({
     start(controller) {
       const reader = upstream.body!.getReader();
-      const pump = () =>
+      const pump = (): Promise<void> =>
         reader.read().then(({ done, value }) => {
           if (done) return controller.close();
           controller.enqueue(value);
