@@ -1,23 +1,6 @@
 {
-  "functions": {
-    "app/api/stream/route.ts": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 300
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/stream",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Connection",
-          "value": "keep-alive"
-        }
-      ]
-    }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev"
 }
