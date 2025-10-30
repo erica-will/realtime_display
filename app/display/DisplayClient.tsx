@@ -15,24 +15,108 @@ export default function DisplayClient({
   const [content, setContent] = useState<DisplayContent>(
     initial ?? DEFAULT_CONTENT
   );
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
 
   useEffect(() => {
-    const es = new EventSource("/api/stream");
-    es.onmessage = (e) => {
-      try {
-        const next: DisplayContent = JSON.parse(e.data);
-        // 確保必要欄位存在（簡易防禦）
-        if (!next || !next.effect) return;
-        setContent(next);
-      } catch {}
+    let es: EventSource | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
+    const connect = () => {
+      setConnectionStatus('connecting');
+      es = new EventSource("/api/stream");
+      
+      es.onopen = () => {
+        console.log('SSE 連線已建立');
+        setConnectionStatus('connected');
+      };
+      
+      es.onmessage = (e) => {
+        try {
+          const next: DisplayContent | { type: string; message: string } = JSON.parse(e.data);
+          console.log('收到 SSE 訊息:', next);
+          
+          // 處理控制消息
+          if ('type' in next) {
+            if (next.type === 'connected') {
+              console.log('SSE 連線確認');
+              setConnectionStatus('connected');
+              return;
+            }
+            if (next.type === 'error') {
+              console.error('SSE 錯誤:', next.message);
+              setConnectionStatus('disconnected');
+              return;
+            }
+          }
+          
+          // 處理內容更新
+          if ('effect' in next && next.effect) {
+            console.log('收到新內容:', next);
+            setContent(next);
+          }
+        } catch (error) {
+          console.error('解析 SSE 訊息失敗:', error, 'raw data:', e.data);
+        }
+      };
+      
+      es.onerror = (error) => {
+        console.error('SSE 連線錯誤:', error);
+        setConnectionStatus('disconnected');
+        es?.close();
+        
+        // 5 秒後重連
+        reconnectTimer = setTimeout(() => {
+          console.log('嘗試重新連線...');
+          connect();
+        }, 5000);
+      };
     };
-    return () => es.close();
+
+    connect();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+    };
   }, []);
 
   const variants = useMemo(() => toVariants(content.effect), [content.effect]);
 
+  const getConnectionStatusClass = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return 'bg-green-100 text-green-800';
+      case 'connecting':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'disconnected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return '● 已連線';
+      case 'connecting':
+        return '○ 連線中';
+      case 'disconnected':
+        return '● 已斷線';
+      default:
+        return '○ 未知狀態';
+    }
+  };
+
   return (
     <div className="min-h-dvh flex items-center justify-center p-8">
+      {/* 連線狀態指示器 */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className={`px-3 py-1 rounded-full text-xs font-medium ${getConnectionStatusClass()}`}>
+          {getConnectionStatusText()}
+        </div>
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={content.version || "no-version"}

@@ -30,7 +30,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
           <Link 
             href="/display" 
             className="group p-8 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 hover:border-gray-500 transition-all duration-300 hover:scale-105"
@@ -67,7 +67,20 @@ export default function Home() {
             </p>
           </Link>
 
-          <div className="group p-8 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 hover:border-gray-500 transition-all duration-300">
+          <Link 
+            href="/admin" 
+            className="group p-8 rounded-xl bg-gradient-to-br from-red-900 to-red-800 border border-red-700 hover:border-red-500 transition-all duration-300 hover:scale-105"
+          >
+            <h3 className="text-xl font-bold mb-3 text-white group-hover:text-red-400 transition-colors">
+              後台管理
+            </h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              內容發佈管理，更新即時顯示內容
+            </p>
+          </Link>
+
+          <div className="group p-8 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 hover:border-gray-500 transition-all duration-300 md:col-span-2"
+          >
             <h3 className="text-xl font-bold mb-3 text-white group-hover:text-orange-400 transition-colors">
               API 端點
             </h3>

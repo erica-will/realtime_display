@@ -54,8 +54,11 @@ export async function POST(req: NextRequest) {
 
   // 1) 寫入「單一真相」
   await redis.set(CURRENT_KEY, payload);
+  console.log('內容已儲存到 Redis:', payload.title);
+  
   // 2) 廣播（所有訂閱者都會收到）
   await redis.publish(CHANNEL, JSON.stringify(payload));
+  console.log('內容已廣播到頻道:', CHANNEL);
 
   return NextResponse.json({ ok: true, version });
 }
