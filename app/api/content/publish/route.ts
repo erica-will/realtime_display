@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { redis, CURRENT_KEY, CHANNEL } from '@/lib/kv';
+import { pusher, PUSHER_CONFIG } from '@/lib/pusher';
 import type { DisplayContent } from '@/types/content';
 
 const effectSchema = z.discriminatedUnion('type', [
@@ -56,9 +57,22 @@ export async function POST(req: NextRequest) {
   await redis.set(CURRENT_KEY, payload);
   console.log('內容已儲存到 Redis:', payload.title);
   
-  // 2) 廣播（所有訂閱者都會收到）
+  // 2) 廣播到 Redis（保留原有的 SSE 功能）
   await redis.publish(CHANNEL, JSON.stringify(payload));
-  console.log('內容已廣播到頻道:', CHANNEL);
+  console.log('內容已廣播到 Redis 頻道:', CHANNEL);
+
+  // 3) 廣播到 Pusher（即時 WebSocket 更新）
+  if (pusher) {
+    try {
+      await pusher.trigger(PUSHER_CONFIG.CHANNEL, PUSHER_CONFIG.EVENT, payload);
+      console.log('內容已廣播到 Pusher:', PUSHER_CONFIG.CHANNEL);
+    } catch (error) {
+      console.error('Pusher 廣播失敗:', error);
+      // 不中斷流程，繼續執行
+    }
+  } else {
+    console.log('Pusher 未配置，跳過廣播');
+  }
 
   return NextResponse.json({ ok: true, version });
 }
