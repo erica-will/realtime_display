@@ -1,11 +1,9 @@
 "use client";
 
 import * as THREE from "three";
-import { useMemo, useState } from "react";
-import { Text } from "@react-three/drei";
+import { useMemo, useState, Suspense, useRef } from "react";
+import { Text, OrbitControls, Grid, GizmoHelper, GizmoViewport } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Grid, GizmoHelper, GizmoViewport } from "@react-three/drei";
-import { Suspense, useRef } from "react";
 
 /**
  * 自訂一條貼在圓柱表面的螺旋曲線
@@ -98,24 +96,22 @@ class CylinderWaveCurve extends THREE.Curve<THREE.Vector3> {
  * 把文字沿著曲線依序擺上去
  */
 interface TextOnCurveProps {
-  text?: string;
+  text: string;
   curve: THREE.Curve<THREE.Vector3>;
-  radius?: number;
-  fontSize?: number;
-  spacing?: number;
-  color?: string;
-  animationSpeed?: number;
+  fontSize: number;
+  spacing: number;
+  color: string;
+  animationSpeed: number;
 }
 
 function TextOnCurve({
   text = "HELLO CYLINDER",
   curve,
-  radius = 1,
   fontSize = 0.2,
   spacing = 0.05,
   color = "#fff",
   animationSpeed = 0,
-}: TextOnCurveProps) {
+}: Readonly<TextOnCurveProps>) {
   const groupRef = useRef<THREE.Group>(null);
   const [timeOffset, setTimeOffset] = useState(0);
 
@@ -184,7 +180,6 @@ function TextOnCurve({
           color={color}
           anchorX="center"
           anchorY="middle"
-          font="/fonts/helvetiker_bold.typeface.json"
         >
           {item.char}
         </Text>
@@ -215,9 +210,9 @@ function CylinderWithText({
   spacing = 0.03,
   curveType = 'spiral',
   animationSpeed = 0,
-  cylinderColor = "#1e293b",
-  textColor = "#fff",
-}: CylinderWithTextProps) {
+  cylinderColor = '#1f2937',
+  textColor = '#fff'
+}: Readonly<CylinderWithTextProps>) {
   
   // 根據類型建立不同的曲線
   const curve = useMemo(() => {
@@ -249,7 +244,6 @@ function CylinderWithText({
       <TextOnCurve
         text={text}
         curve={curve}
-        radius={radius}
         fontSize={fontSize}
         spacing={spacing}
         color={textColor}

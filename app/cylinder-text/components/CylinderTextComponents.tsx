@@ -92,7 +92,6 @@ export interface TextOnCurveProps {
   spacing?: number;
   color?: string;
   animationSpeed?: number;
-  font?: string;
 }
 
 /**
@@ -105,7 +104,6 @@ export function TextOnCurve({
   spacing = 0.05,
   color = "#ffffff",
   animationSpeed = 0,
-  font,
 }: TextOnCurveProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [timeOffset, setTimeOffset] = useState(0);
@@ -175,7 +173,6 @@ export function TextOnCurve({
           color={color}
           anchorX="center"
           anchorY="middle"
-          font={font}
         >
           {item.char}
         </Text>
