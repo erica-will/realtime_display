@@ -4,12 +4,16 @@ import ClientPathMoveText from "./components/ClientPathMoveText";
 import ClientWaveText from "./components/ClientWaveText";
 import ClientAdvancedInfinityText from "./components/ClientAdvancedInfinityText";
 import P5Sketch from "./components/P5Sketch";
+import TextWave from "./components/TextWave";
+import TextWave3D from "./components/TextWave3D";
 
 export default function Home() {
   return (
     <>
       <h1>My p5 + Next.js</h1>
       <P5Sketch />
+      <TextWave />
+      <TextWave3D />
       <div className="min-h-screen bg-black text-white relative overflow-hidden">
         {/* 背景動態元素 */}
         <div className="absolute top-1/4 left-1/4 opacity-20 pointer-events-none">

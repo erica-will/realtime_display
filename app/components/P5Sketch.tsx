@@ -18,7 +18,7 @@ export default function P5Sketch() {
       };
 
       p.draw = () => {
-        p.background(30);
+        p.background(0);
         p.fill(255);
         p.noStroke();
         p.circle(p.width / 2, p.height / 2, 100);
